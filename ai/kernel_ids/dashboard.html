@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>XDP Real-Time System Monitor</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .progress-bg { background: #2d314d; border-radius: 6px; width: 100%; height: 12px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.4s ease; }
+        #ram-fill { background: #a855f7; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 Мониторинг сетевой активности и ядра в реальном времени</h1>
+        <div class="badge">Сервер: 🌐 45.9.15.253 | Режим: Прямой HTTP-Опрос</div>
+    </header>
+
+    <div class="grid-hardware">
+        <div class="card">
+            <h3>Загрузка Процессора</h3>
+            <div class="metric-value"><span id="cpu-val">0</span><span class="metric-unit">%</span></div>
+            <div class="progress-bg"><div id="cpu-fill" class="progress-fill"></div></div>
+        </div>
+        <div class="card">
+            <h3>Использование Памяти</h3>
+            <div class="metric-value"><span id="ram-val">0</span><span class="metric-unit">%</span></div>
+            <div class="progress-bg"><div id="ram-fill" class="progress-fill"></div></div>
+        </div>
+        <div class="card">
+            <h3>Корневой Диск (/)</h3>
+            <div class="metric-value"><span id="disk-val">0</span><span class="metric-unit">%</span></div>
+        </div>
+        <div class="card">
+            <h3>Атаки за 5 мин (БД)</h3>
+            <div class="metric-value" style="color: #f43f5e;"><span id="sec-events">0</span></div>
+        </div>
+    </div>
+
+    <div class="grid-main">
+        <div class="card">
+            <h3>Сетевая активность интерфейсов (Linux Kernel OS)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Интерфейс</th>
+                        <th>Статус</th>
+                        <th>IP Адрес</th>
+                        <th>Вход (RX)</th>
+                        <th>Исход (TX)</th>
+                        <th>Пакеты (RX/TX)</th>
+                        <th>Ошибки</th>
+                    </tr>
+                </thead>
+                <tbody id="iface-body">
+                    <tr><td colspan="7" style="text-align:center;">Ожидание данных от сервера...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Состояние компонентов подсистем</h3>
+            <div id="services-zone">
+                <div class="service-row"><span>PostgreSQL (ids_db)</span><span class="srv-stopped">UNKNOWN</span></div>
+                <div class="service-row"><span>DHCP/DNS Daemon (dnsmasq)</span><span class="srv-stopped">UNKNOWN</span></div>
+                <div class="service-row"><span>VPN Core (OpenVPN)</span><span class="srv-stopped">UNKNOWN</span></div>
+            </div>
+            <h3 style="margin-top: 25px;">Ядро eBPF / Мягкие листы</h3>
+            <div class="service-row"><span>IP в Blacklist (eBPF Map)</span><span id="stat-black" style="font-weight:bold; color:#ef4444;">0</span></div>
+            <div class="service-row"><span>IP в Whitelist (eBPF Map)</span><span id="stat-white" style="font-weight:bold; color:#10b981;">0</span></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
