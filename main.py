@@ -173,7 +173,7 @@ def start_background_tasks():
     threading.Thread(target=ai_worker_thread, daemon=True).start()
     threading.Thread(target=run_ebpf_polling, daemon=True).start()
 # ==============================================================================
-# ЧАСТЬ 3: ВЕБ-ИНТЕРФЕЙС ДАШБОРДА И РОУТЫ ДЕЙСТВИЙ
+# ЧАСТЬ 3: ВЕБ-ИНТЕРФЕЙС ДАШБОРДА И РОУТЫ ДЕЙСТВИЙ (ИНТЕГРАЦИЯ СЕРВИСОВ)
 # ==============================================================================
 @app.get("/", response_class=HTMLResponse)
 def dashboard(username: str = Depends(authenticate_user), search_ip: str = Query(None)):
@@ -194,24 +194,63 @@ def dashboard(username: str = Depends(authenticate_user), search_ip: str = Query
 
     html_content = f"""
     <html>
-    <head><title>Kernel IPS Dashboard</title><style>body{{font-family:Arial;margin:30px;background:#f4f6f9}}.container{{display:flex;gap:20px}}.box{{background:white;padding:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);flex:1}}table{{width:100%;border-collapse:collapse;margin-top:15px}}th,td{{padding:10px;text-align:left;border-bottom:1px solid #ddd}}th{{background:#35495e;color:white}}input[type=text]{{padding:8px;width:200px;border:1px solid #ccc;border-radius:4px}}button{{padding:8px 15px;background:#2ecc71;color:white;border:none;border-radius:4px;cursor:pointer}}button.block{{background:#e74c3c}}button.clear{{background:#7f8c8d;width:100%;margin-top:15px}}.badge{{float:right;background:#e2e8f0;padding:6px 12px;border-radius:4px}}</style></head>
+    <head>
+        <title>Kernel IPS Dashboard</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f6f9; }}
+            
+            /* Стили навигационной панели */
+            .navbar {{ background: #2c3e50; padding: 12px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }}
+            .navbar-brand {{ color: white; font-size: 18px; font-weight: bold; text-decoration: none; }}
+            .services-links {{ display: flex; gap: 15px; }}
+            .service-btn {{ color: #ecf0f1; text-decoration: none; padding: 6px 14px; border-radius: 4px; background: #34495e; font-size: 13px; font-weight: 500; transition: 0.2s; border: 1px solid #4f5d73; }}
+            .service-btn:hover {{ background: #3498db; color: white; border-color: #3498db; }}
+            .service-btn.alert-btn {{ border-color: #e74c3c; }}
+            .service-btn.alert-btn:hover {{ background: #e74c3c; }}
+            
+            /* Основной контейнер */
+            .main-content {{ padding: 30px; }}
+            .container {{ display: flex; gap: 20px; }}
+            .box {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th, td {{ padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }}
+            th {{ background: #35495e; color: white; }}
+            input[type=text] {{ padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px; }}
+            button {{ padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; }}
+            button.block {{ background: #e74c3c; }}
+            button.clear {{ background: #7f8c8d; width: 100%; margin-top: 15px; }}
+            .badge {{ background: #e2e8f0; padding: 6px 12px; border-radius: 4px; color: #2c3e50; font-size: 13px; font-weight: bold; }}
+        </style>
+    </head>
     <body>
-        <div class="badge">👤 Администратор: {username}</div>
-        <h1>🛡️ Монитор сетевой безопасности ядра (XDP / eBPF + GeoIP)</h1>
-        <p>Активная защита на интерфейсе: <b>{INTERFACE}</b></p>
-        <div class="container">
-            <div class="box">
-                <h2>Управление правилами</h2>
-                <form action="/action/whitelist" method="post"><input type="text" name="ip" placeholder="192.168.1.100" required><button type="submit">В Белый список</button></form><br>
-                <form action="/action/blacklist" method="post"><input type="text" name="ip" placeholder="10.0.0.5" required><button type="submit" class="block">Блокировать IP</button></form>
-                <form action="/action/clear-all" method="post" onsubmit="return confirm('Очистить ВСЕ данные?');"><button type="submit" class="clear">🧹 Полная очистка данных</button></form>
-                <h3>Текущие белые списки в ядре:</h3><ul>{whitelisted_li}</ul>
-                <h3>Активные блокировки в ядре:</h3><ul>{blocked_li}</ul>
+        <!-- НАВИГАЦИОННАЯ ПАНЕЛЬ С ВАШИМИ СЕРВИСАМИ -->
+        <div class="navbar">
+            <a class="navbar-brand" href="/">🛡️ XDP / eBPF Kernel IPS</a>
+            <div class="services-links">
+                <a href="http://45.9.15.253:8001/" target="_blank" class="service-btn alert-btn">⚔️ Контратака</a>
+                <a href="http://45.9.15.253:8002/" target="_blank" class="service-btn">🎛️ Управление шлюзом</a>
+                <a href="http://45.9.15.253:8005/" target="_blank" class="service-btn">🖥️ Мониторинг системы</a>
+                <a href="/docs" target="_blank" class="service-btn" style="background:#27ae60; border-color:#27ae60;">📑 Swagger API</a>
             </div>
-            <div class="box" style="flex: 2;">
-                <h2>Журнал событий ИИ и Автоблокировок (PostgreSQL)</h2>
-                <form action="/" method="get" style="margin-bottom:15px; display:flex; gap:10px;"><input type="text" name="search_ip" placeholder="Поиск по IP..." value="{search_ip or ''}"><button type="submit" style="background:#3498db;">Найти</button>{f"<a href='/' style='padding:8px 12px; background:#bdc3c7; color:black; text-decoration:none; border-radius:4px;'>Сбросить</a>" if search_ip else ""}</form>
-                <table><tr><th>Время</th><th>IP Источник (GeoIP)</th><th>Порт</th><th>Действие</th><th>Причина</th></tr>{table_rows or "<tr><td colspan='5'>Событий не найдено</td></tr>"}</table>
+            <div class="badge">👤 {username}</div>
+        </div>
+
+        <div class="main-content">
+            <p>Активная защита на интерфейсе: <b>{INTERFACE}</b></p>
+            <div class="container">
+                <div class="box">
+                    <h2>Управление правилами</h2>
+                    <form action="/action/whitelist" method="post"><input type="text" name="ip" placeholder="192.168.1.100" required><button type="submit">В Белый список</button></form><br>
+                    <form action="/action/blacklist" method="post"><input type="text" name="ip" placeholder="10.0.0.5" required><button type="submit" class="block">Блокировать IP</button></form>
+                    <form action="/action/clear-all" method="post" onsubmit="return confirm('Очистить ВСЕ данные?');"><button type="submit" class="clear">🧹 Полная очистка данных</button></form>
+                    <h3>Текущие белые списки в ядре:</h3><ul>{whitelisted_li}</ul>
+                    <h3>Активные блокировки в ядре:</h3><ul>{blocked_li}</ul>
+                </div>
+                <div class="box" style="flex: 2;">
+                    <h2>Журнал событий ИИ и Автоблокировок (PostgreSQL)</h2>
+                    <form action="/" method="get" style="margin-bottom:15px; display:flex; gap:10px;"><input type="text" name="search_ip" placeholder="Поиск по IP..." value="{search_ip or ''}"><button type="submit" style="background:#3498db;">Найти</button>{f"<a href='/' style='padding:8px 12px; background:#bdc3c7; color:black; text-decoration:none; border-radius:4px;'>Сбросить</a>" if search_ip else ""}</form>
+                    <table><tr><th>Время</th><th>IP Источник (GeoIP)</th><th>Порт</th><th>Действие</th><th>Причина</th></tr>{table_rows or "<tr><td colspan='5'>Событий не найдено</td></tr>"}</table>
+                </div>
             </div>
         </div>
     </body>
